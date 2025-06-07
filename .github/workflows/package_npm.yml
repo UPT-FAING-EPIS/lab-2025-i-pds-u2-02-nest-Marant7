@@ -1,0 +1,133 @@
+name: 🧪 Test, Analyze & Package
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test-customer-app:
+    name: 🏢 Test Customer App
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: customer-app
+    
+    steps:
+    - name: 📥 Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '21'
+        cache: 'npm'
+        cache-dependency-path: customer-app/package-lock.json
+        
+    - name: 🔧 Install Dependencies
+      run: npm ci
+      
+    - name: 🧪 Run Tests with Coverage
+      run: npm run test:cov
+      
+    - name: 📊 SonarCloud Scan Customer App
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      with:
+        projectBaseDir: customer-app
+
+  test-notifications:
+    name: 📬 Test Notifications
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: notifications
+    
+    steps:
+    - name: 📥 Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '21'
+        cache: 'npm'
+        cache-dependency-path: notifications/package-lock.json
+        
+    - name: 🔧 Install Dependencies
+      run: npm ci
+      
+    - name: 🧪 Run Tests with Coverage
+      run: npm run test:cov
+      
+    - name: 📊 SonarCloud Scan Notifications
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      with:
+        projectBaseDir: notifications
+
+  publish-packages:
+    name: 📦 Publish Packages
+    needs: [test-customer-app, test-notifications]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: 📥 Checkout
+      uses: actions/checkout@v4
+      
+    - name: 📦 Setup Node.js for GitHub Packages
+      uses: actions/setup-node@v4
+      with:
+        node-version: '21'
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@mario-flores-ramos'
+        
+    - name: 🏢 Build and Publish Customer App
+      run: |
+        cd customer-app
+        npm ci
+        npm run build
+        npm version patch --no-git-tag-version
+        node -e "
+          const pkg = require('./package.json');
+          pkg.name = '@mario-flores-ramos/customer-app_ramos';
+          pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
+          pkg.author = 'Mario Antonio Flores Ramos';
+          pkg.description = 'Customer App implementing Facade Design Pattern';
+          require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2));
+        "
+        npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: 📬 Build and Publish Notifications
+      run: |
+        cd notifications
+        npm ci
+        npm run build
+        npm version patch --no-git-tag-version
+        node -e "
+          const pkg = require('./package.json');
+          pkg.name = '@mario-flores-ramos/notifications_ramos';
+          pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
+          pkg.author = 'Mario Antonio Flores Ramos';
+          pkg.description = 'Notifications App implementing Bridge Design Pattern';
+          require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2));
+        "
+        npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

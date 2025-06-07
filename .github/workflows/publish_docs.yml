@@ -1,0 +1,104 @@
+name: 📚 Publish Documentation
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-docs:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout
+      uses: actions/checkout@v4
+      
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '21'
+        cache: 'npm'
+        
+    - name: 📚 Generate Customer App Documentation
+      run: |
+        cd customer-app
+        npm ci
+        npx @compodoc/compodoc -p tsconfig.json -d ../docs/customer-app --theme material --name "Customer App - Facade Pattern" --hideGenerator
+        
+    - name: 📬 Generate Notifications Documentation
+      run: |
+        cd notifications
+        npm ci
+        npx @compodoc/compodoc -p tsconfig.json -d ../docs/notifications --theme material --name "Notifications - Bridge Pattern" --hideGenerator
+        
+    - name: 🏠 Create Documentation Index
+      run: |
+        mkdir -p docs
+        cat > docs/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Documentación - Patrones de Diseño</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 0; padding: 40px; background: #f5f5f5; }
+                .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                h1 { color: #333; text-align: center; margin-bottom: 30px; }
+                .project { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9; }
+                .project h2 { color: #0366d6; margin-bottom: 10px; }
+                .project p { margin-bottom: 15px; color: #666; }
+                .btn { display: inline-block; background: #0366d6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px; }
+                .btn:hover { background: #0256cc; }
+                .author { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🏗️ Patrones de Diseño Estructurales</h1>
+                <p style="text-align: center; color: #666;">Laboratorio 02 - Mario Antonio Flores Ramos</p>
+                
+                <div class="project">
+                    <h2>🏢 Customer App - Patrón Facade</h2>
+                    <p>Implementación del patrón Facade para simplificar el proceso de registro de clientes.</p>
+                    <a href="./customer-app/index.html" class="btn">📖 Ver Documentación</a>
+                </div>
+                
+                <div class="project">
+                    <h2>📬 Notifications - Patrón Bridge</h2>
+                    <p>Implementación del patrón Bridge para el envío de mensajes por diferentes canales.</p>
+                    <a href="./notifications/index.html" class="btn">📖 Ver Documentación</a>
+                </div>
+                
+                <div class="author">
+                    <p><strong>Autor:</strong> Mario Antonio Flores Ramos</p>
+                    <p><strong>Fecha:</strong> Junio 2025</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        EOF
+        
+    - name: 🔧 Setup Pages
+      uses: actions/configure-pages@v4
+      
+    - name: 📤 Upload Pages Artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: './docs'
+        
+    - name: 🚀 Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
