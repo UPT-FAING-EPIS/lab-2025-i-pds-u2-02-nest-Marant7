@@ -20,7 +20,7 @@ jobs:
       with:
         fetch-depth: 0
         
-    - name: 📦 Setup Node.js
+    - name: 📦 Setup Node.js for GitHub Packages
       uses: actions/setup-node@v4
       with:
         node-version: '21'
@@ -49,38 +49,99 @@ jobs:
       with:
         projectBaseDir: customer-app
         
-    - name: 🏢 Publish Customer App Package
+    - name: 🏢 Publish Customer App to GitHub Packages
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       run: |
         cd customer-app
         npm version patch --no-git-tag-version
+        
+        # Configurar .npmrc para GitHub Packages
+        echo "@marant7:registry=https://npm.pkg.github.com" > .npmrc
+        echo "//npm.pkg.github.com/:_authToken=${{ secrets.TOKEN_PACKAGE }}" >> .npmrc
+        
+        # Configurar package.json
         node -e "
           const pkg = require('./package.json');
-          pkg.name = '@marant7/customer-app_ramos';
+          pkg.name = '@marant7/customer-app-ramos';
           delete pkg.private;
-          pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
+          pkg.publishConfig = {
+            registry: 'https://npm.pkg.github.com',
+            access: 'public'
+          };
+          pkg.repository = {
+            type: 'git',
+            url: 'git+https://github.com/${{ github.repository }}.git'
+          };
           pkg.author = 'Mario Antonio Flores Ramos';
-          pkg.description = 'Customer App implementing Facade Design Pattern';
+          pkg.description = 'Customer App implementing Facade Design Pattern - Lab 02';
+          pkg.keywords = ['facade', 'design-pattern', 'nestjs', 'typescript'];
           require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2));
         "
+        
+        # Mostrar configuración para debug
+        echo '=== .npmrc content ==='
+        cat .npmrc
+        echo '=== package.json name ==='
+        node -e "console.log(require('./package.json').name)"
+        
+        # Publicar
         npm publish
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ secrets.TOKEN_PACKAGE }}
         
-    - name: 📬 Publish Notifications Package
+    - name: 📬 Publish Notifications to GitHub Packages
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       run: |
         cd notifications
         npm version patch --no-git-tag-version
+        
+        # Configurar .npmrc para GitHub Packages
+        echo "@marant7:registry=https://npm.pkg.github.com" > .npmrc
+        echo "//npm.pkg.github.com/:_authToken=${{ secrets.TOKEN_PACKAGE }}" >> .npmrc
+        
+        # Configurar package.json
         node -e "
           const pkg = require('./package.json');
-          pkg.name = '@marant7/notifications_ramos';
+          pkg.name = '@marant7/notifications-ramos';
           delete pkg.private;
-          pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
+          pkg.publishConfig = {
+            registry: 'https://npm.pkg.github.com',
+            access: 'public'
+          };
+          pkg.repository = {
+            type: 'git',
+            url: 'git+https://github.com/${{ github.repository }}.git'
+          };
           pkg.author = 'Mario Antonio Flores Ramos';
-          pkg.description = 'Notifications App implementing Bridge Design Pattern';
+          pkg.description = 'Notifications App implementing Bridge Design Pattern - Lab 02';
+          pkg.keywords = ['bridge', 'design-pattern', 'nestjs', 'typescript'];
           require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2));
         "
+        
+        # Mostrar configuración para debug
+        echo '=== .npmrc content ==='
+        cat .npmrc
+        echo '=== package.json name ==='
+        node -e "console.log(require('./package.json').name)"
+        
+        # Publicar
         npm publish
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ secrets.TOKEN_PACKAGE }}
+        
+    - name: 📋 Display Package URLs
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: |
+        echo "## 📦 Paquetes Publicados en GitHub Packages" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **@marant7/customer-app-ramos**" >> $GITHUB_STEP_SUMMARY
+        echo "🔗 https://github.com/Marant7?tab=packages" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **@marant7/notifications-ramos**" >> $GITHUB_STEP_SUMMARY
+        echo "🔗 https://github.com/Marant7?tab=packages" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🛠️ **Instalación:**" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "npm install @marant7/customer-app-ramos" >> $GITHUB_STEP_SUMMARY
+        echo "npm install @marant7/notifications-ramos" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
