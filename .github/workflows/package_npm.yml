@@ -11,8 +11,7 @@ permissions:
   packages: write
 
 jobs:
-  test-customer-app:
-    name: 🏢 Test Customer App
+  test-and-publish:
     runs-on: ubuntu-latest
     
     steps:
@@ -25,76 +24,34 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '21'
+        registry-url: 'https://npm.pkg.github.com'
         
-    - name: 🔧 Install Dependencies
-      working-directory: customer-app
-      run: npm ci
-      
-    - name: 🧪 Run Tests with Coverage
-      working-directory: customer-app
-      run: npm run test:cov
-      
-    - name: 📊 SonarCloud Scan Customer App
-      uses: SonarSource/sonarcloud-github-action@master
+    - name: 🧪 Test Customer App
+      run: |
+        cd customer-app
+        npm ci
+        npm run test:cov
+        npm run build
+        
+    - name: 🧪 Test Notifications
+      run: |
+        cd notifications
+        npm ci
+        npm run test:cov
+        npm run build
+        
+    - name: 📊 SonarCloud Scan (Customer App Only)
+      uses: SonarSource/sonarcloud-github-action@v2.3.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       with:
         projectBaseDir: customer-app
-
-  test-notifications:
-    name: 📬 Test Notifications
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: 📥 Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
         
-    - name: 📦 Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '21'
-        
-    - name: 🔧 Install Dependencies
-      working-directory: notifications
-      run: npm ci
-      
-    - name: 🧪 Run Tests with Coverage
-      working-directory: notifications
-      run: npm run test:cov
-      
-    - name: 📊 SonarCloud Scan Notifications
-      uses: SonarSource/sonarcloud-github-action@master
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      with:
-        projectBaseDir: notifications
-
-  publish-packages:
-    name: 📦 Publish Packages
-    needs: [test-customer-app, test-notifications]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
-    steps:
-    - name: 📥 Checkout
-      uses: actions/checkout@v4
-      
-    - name: 📦 Setup Node.js for GitHub Packages
-      uses: actions/setup-node@v4
-      with:
-        node-version: '21'
-        registry-url: 'https://npm.pkg.github.com'
-        scope: '@mario-flores-ramos'
-        
-    - name: 🏢 Build and Publish Customer App
+    - name: 🏢 Publish Customer App Package
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       run: |
         cd customer-app
-        npm ci
-        npm run build
         npm version patch --no-git-tag-version
         node -e "
           const pkg = require('./package.json');
@@ -108,11 +65,10 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
-    - name: 📬 Build and Publish Notifications
+    - name: 📬 Publish Notifications Package
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       run: |
         cd notifications
-        npm ci
-        npm run build
         npm version patch --no-git-tag-version
         node -e "
           const pkg = require('./package.json');
