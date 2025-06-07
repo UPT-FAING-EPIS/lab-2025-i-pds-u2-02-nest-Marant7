@@ -44,44 +44,86 @@ jobs:
         npm run test:cov
         npm run build
         
-    - name: 📦 Create Customer App Package
-      working-directory: customer-app
-      run: |
-        node -e "
-          const pkg = require('./package.json');
-          pkg.name = '@marant7/customer-app-ramos';
-          pkg.version = '${{ github.ref_name }}'.replace('v', '');
-          delete pkg.private;
-          pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
-          pkg.author = 'Mario Antonio Flores Ramos';
-          pkg.description = 'Customer App implementing Facade Design Pattern';
-          require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2));
-        "
-        npm pack
-        
-    - name: 📦 Create Notifications Package
-      working-directory: notifications
-      run: |
-        node -e "
-          const pkg = require('./package.json');
-          pkg.name = '@marant7/notifications-ramos';
-          pkg.version = '${{ github.ref_name }}'.replace('v', '');
-          delete pkg.private;
-          pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
-          pkg.author = 'Mario Antonio Flores Ramos';
-          pkg.description = 'Notifications App implementing Bridge Design Pattern';
-          require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2));
-        "
-        npm pack
-        
     - name: 🏷️ Get Version
       id: get_version
       run: |
         if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          VERSION="${{ github.event.inputs.version }}"
         else
-          echo "VERSION=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          VERSION="${{ github.ref_name }}"
         fi
+        # Remove 'v' prefix if present
+        VERSION=$(echo $VERSION | sed 's/^v//')
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Selected version: $VERSION"
+        
+    - name: 📦 Create Customer App Package
+      working-directory: customer-app
+      run: |
+        # Set version in package.json
+        npm version ${{ steps.get_version.outputs.VERSION }} --no-git-tag-version
+        
+        # Configure package for GitHub
+        node -e "
+          const pkg = require('./package.json');
+          pkg.name = '@marant7/customer-app-ramos';
+          delete pkg.private;
+          pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
+          pkg.repository = {
+            type: 'git',
+            url: 'git+https://github.com/${{ github.repository }}.git'
+          };
+          pkg.author = 'Mario Antonio Flores Ramos';
+          pkg.description = 'Customer App implementing Facade Design Pattern - Lab 02';
+          pkg.keywords = ['facade', 'design-pattern', 'nestjs', 'typescript'];
+          require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2));
+        "
+        
+        # Create package
+        npm pack
+        
+        # List generated files for debugging
+        echo "Generated files:"
+        ls -la *.tgz
+        
+        # Find the exact filename and store it
+        PACKAGE_FILE=$(ls *.tgz | head -1)
+        echo "CUSTOMER_PACKAGE_FILE=$PACKAGE_FILE" >> $GITHUB_ENV
+        echo "Customer package file: $PACKAGE_FILE"
+        
+    - name: 📦 Create Notifications Package
+      working-directory: notifications
+      run: |
+        # Set version in package.json
+        npm version ${{ steps.get_version.outputs.VERSION }} --no-git-tag-version
+        
+        # Configure package for GitHub
+        node -e "
+          const pkg = require('./package.json');
+          pkg.name = '@marant7/notifications-ramos';
+          delete pkg.private;
+          pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
+          pkg.repository = {
+            type: 'git',
+            url: 'git+https://github.com/${{ github.repository }}.git'
+          };
+          pkg.author = 'Mario Antonio Flores Ramos';
+          pkg.description = 'Notifications App implementing Bridge Design Pattern - Lab 02';
+          pkg.keywords = ['bridge', 'design-pattern', 'nestjs', 'typescript'];
+          require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2));
+        "
+        
+        # Create package
+        npm pack
+        
+        # List generated files for debugging
+        echo "Generated files:"
+        ls -la *.tgz
+        
+        # Find the exact filename and store it
+        PACKAGE_FILE=$(ls *.tgz | head -1)
+        echo "NOTIFICATIONS_PACKAGE_FILE=$PACKAGE_FILE" >> $GITHUB_ENV
+        echo "Notifications package file: $PACKAGE_FILE"
         
     - name: 📋 Create Release
       id: create_release
@@ -89,22 +131,44 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.TOKEN_PACKAGE }}
       with:
-        tag_name: ${{ steps.get_version.outputs.VERSION }}
-        release_name: 🎉 Release ${{ steps.get_version.outputs.VERSION }}
+        tag_name: v${{ steps.get_version.outputs.VERSION }}
+        release_name: 🎉 Release v${{ steps.get_version.outputs.VERSION }}
         body: |
           ## 🏗️ Patrones de Diseño Estructurales - Lab 02
           
           **Autor:** Mario Antonio Flores Ramos
+          **Versión:** ${{ steps.get_version.outputs.VERSION }}
           
           ### 📦 Paquetes Incluidos
-          - `@marant7/customer-app-ramos`: Implementación del patrón Facade
-          - `@marant7/notifications-ramos`: Implementación del patrón Bridge
+          - `@marant7/customer-app-ramos@${{ steps.get_version.outputs.VERSION }}`: Implementación del patrón Facade
+          - `@marant7/notifications-ramos@${{ steps.get_version.outputs.VERSION }}`: Implementación del patrón Bridge
           
-          ### 🛠️ Instalación
+          ### 🛠️ Instalación desde GitHub Packages
           ```bash
-          npm install @marant7/customer-app-ramos
-          npm install @marant7/notifications-ramos
+          # Configurar registry para @marant7 scope
+          echo "@marant7:registry=https://npm.pkg.github.com" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN" >> .npmrc
+          
+          # Instalar paquetes
+          npm install @marant7/customer-app-ramos@${{ steps.get_version.outputs.VERSION }}
+          npm install @marant7/notifications-ramos@${{ steps.get_version.outputs.VERSION }}
           ```
+          
+          ### 📥 Instalación desde archivos .tgz
+          También puedes descargar los archivos .tgz de esta release e instalar localmente:
+          ```bash
+          npm install ./customer-app-ramos-v${{ steps.get_version.outputs.VERSION }}.tgz
+          npm install ./notifications-ramos-v${{ steps.get_version.outputs.VERSION }}.tgz
+          ```
+          
+          ### 🏗️ Patrones implementados
+          - **Facade Pattern**: Simplifica la interfaz del sistema de gestión de clientes
+          - **Bridge Pattern**: Separa la abstracción de notificaciones de su implementación
+          
+          ### 🧪 Cobertura de tests
+          - Tests unitarios con Jest
+          - Análisis de código con SonarCloud
+          - Documentación generada con Compodoc
         draft: false
         prerelease: false
         
@@ -114,8 +178,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.TOKEN_PACKAGE }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./customer-app/marant7-customer-app-ramos-*.tgz
-        asset_name: customer-app-ramos-${{ steps.get_version.outputs.VERSION }}.tgz
+        asset_path: ./customer-app/${{ env.CUSTOMER_PACKAGE_FILE }}
+        asset_name: customer-app-ramos-v${{ steps.get_version.outputs.VERSION }}.tgz
         asset_content_type: application/gzip
         
     - name: 📤 Upload Notifications Package
@@ -124,6 +188,22 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.TOKEN_PACKAGE }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./notifications/marant7-notifications-ramos-*.tgz
-        asset_name: notifications-ramos-${{ steps.get_version.outputs.VERSION }}.tgz
+        asset_path: ./notifications/${{ env.NOTIFICATIONS_PACKAGE_FILE }}
+        asset_name: notifications-ramos-v${{ steps.get_version.outputs.VERSION }}.tgz
         asset_content_type: application/gzip
+        
+    - name: 🎉 Release Summary
+      run: |
+        echo "## 🎉 Release v${{ steps.get_version.outputs.VERSION }} Creado" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 Paquetes publicados:" >> $GITHUB_STEP_SUMMARY
+        echo "- 🏢 **@marant7/customer-app-ramos@${{ steps.get_version.outputs.VERSION }}**" >> $GITHUB_STEP_SUMMARY
+        echo "- 📬 **@marant7/notifications-ramos@${{ steps.get_version.outputs.VERSION }}**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Enlaces:" >> $GITHUB_STEP_SUMMARY
+        echo "- 📋 [Ver Release](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.get_version.outputs.VERSION }})" >> $GITHUB_STEP_SUMMARY
+        echo "- 📦 [Ver Packages](https://github.com/Marant7?tab=packages)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📁 Archivos generados:" >> $GITHUB_STEP_SUMMARY
+        echo "- \`${{ env.CUSTOMER_PACKAGE_FILE }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- \`${{ env.NOTIFICATIONS_PACKAGE_FILE }}\`" >> $GITHUB_STEP_SUMMARY
