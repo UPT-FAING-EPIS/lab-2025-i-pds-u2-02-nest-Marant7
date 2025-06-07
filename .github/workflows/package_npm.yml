@@ -14,9 +14,6 @@ jobs:
   test-customer-app:
     name: 🏢 Test Customer App
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: customer-app
     
     steps:
     - name: 📥 Checkout
@@ -28,13 +25,13 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '21'
-        cache: 'npm'
-        cache-dependency-path: customer-app/package-lock.json
         
     - name: 🔧 Install Dependencies
+      working-directory: customer-app
       run: npm ci
       
     - name: 🧪 Run Tests with Coverage
+      working-directory: customer-app
       run: npm run test:cov
       
     - name: 📊 SonarCloud Scan Customer App
@@ -48,9 +45,6 @@ jobs:
   test-notifications:
     name: 📬 Test Notifications
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: notifications
     
     steps:
     - name: 📥 Checkout
@@ -62,13 +56,13 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '21'
-        cache: 'npm'
-        cache-dependency-path: notifications/package-lock.json
         
     - name: 🔧 Install Dependencies
+      working-directory: notifications
       run: npm ci
       
     - name: 🧪 Run Tests with Coverage
+      working-directory: notifications
       run: npm run test:cov
       
     - name: 📊 SonarCloud Scan Notifications

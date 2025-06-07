@@ -30,22 +30,22 @@ jobs:
         registry-url: 'https://npm.pkg.github.com'
         
     - name: 🧪 Test Customer App
+      working-directory: customer-app
       run: |
-        cd customer-app
         npm ci
         npm run test:cov
         npm run build
         
     - name: 🧪 Test Notifications
+      working-directory: notifications
       run: |
-        cd notifications
         npm ci
         npm run test:cov
         npm run build
         
     - name: 📦 Create Customer App Package
+      working-directory: customer-app
       run: |
-        cd customer-app
         node -e "
           const pkg = require('./package.json');
           pkg.name = '@mario-flores-ramos/customer-app_ramos';
@@ -58,8 +58,8 @@ jobs:
         npm pack
         
     - name: 📦 Create Notifications Package
+      working-directory: notifications
       run: |
-        cd notifications
         node -e "
           const pkg = require('./package.json');
           pkg.name = '@mario-flores-ramos/notifications_ramos';
@@ -102,15 +102,6 @@ jobs:
           npm install @mario-flores-ramos/customer-app_ramos@${{ steps.get_version.outputs.VERSION }}
           npm install @mario-flores-ramos/notifications_ramos@${{ steps.get_version.outputs.VERSION }}
           ```
-          
-          ### 📚 Documentación
-          - [Ver Documentación Completa](https://mario-flores-ramos.github.io/lab-patrones/)
-          
-          ### ✅ Características
-          - ✅ Pruebas unitarias completas
-          - ✅ Análisis con SonarCloud
-          - ✅ Documentación automática con Compodoc
-          - ✅ Paquetes publicados en GitHub Packages
         draft: false
         prerelease: false
         
