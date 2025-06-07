@@ -28,6 +28,7 @@ jobs:
       with:
         node-version: '21'
         registry-url: 'https://npm.pkg.github.com'
+        scope: '@marant7'
         
     - name: 🧪 Test Customer App
       working-directory: customer-app
@@ -48,7 +49,7 @@ jobs:
       run: |
         node -e "
           const pkg = require('./package.json');
-          pkg.name = '@mario-flores-ramos/customer-app_ramos';
+          pkg.name = '@marant7/customer-app_ramos';
           pkg.version = '${{ github.ref_name }}'.replace('v', '');
           delete pkg.private;
           pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
@@ -63,7 +64,7 @@ jobs:
       run: |
         node -e "
           const pkg = require('./package.json');
-          pkg.name = '@mario-flores-ramos/notifications_ramos';
+          pkg.name = '@marant7/notifications_ramos';
           pkg.version = '${{ github.ref_name }}'.replace('v', '');
           delete pkg.private;
           pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
@@ -96,13 +97,13 @@ jobs:
           **Autor:** Mario Antonio Flores Ramos
           
           ### 📦 Paquetes Incluidos
-          - `@mario-flores-ramos/customer-app_ramos`: Implementación del patrón Facade
-          - `@mario-flores-ramos/notifications_ramos`: Implementación del patrón Bridge
+          - `@marant7/customer-app_ramos`: Implementación del patrón Facade
+          - `@marant7/notifications_ramos`: Implementación del patrón Bridge
           
           ### 🛠️ Instalación
           ```bash
-          npm install @mario-flores-ramos/customer-app_ramos
-          npm install @mario-flores-ramos/notifications_ramos
+          npm install @marant7/customer-app_ramos
+          npm install @marant7/notifications_ramos
           ```
         draft: false
         prerelease: false
@@ -113,7 +114,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./customer-app/mario-flores-ramos-customer-app_ramos-*.tgz
+        asset_path: ./customer-app/marant7-customer-app_ramos-*.tgz
         asset_name: customer-app_ramos-${{ steps.get_version.outputs.VERSION }}.tgz
         asset_content_type: application/gzip
         
@@ -123,6 +124,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./notifications/mario-flores-ramos-notifications_ramos-*.tgz
+        asset_path: ./notifications/marant7-notifications_ramos-*.tgz
         asset_name: notifications_ramos-${{ steps.get_version.outputs.VERSION }}.tgz
         asset_content_type: application/gzip
