@@ -50,6 +50,7 @@ jobs:
           const pkg = require('./package.json');
           pkg.name = '@mario-flores-ramos/customer-app_ramos';
           pkg.version = '${{ github.ref_name }}'.replace('v', '');
+          delete pkg.private;
           pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
           pkg.author = 'Mario Antonio Flores Ramos';
           pkg.description = 'Customer App implementing Facade Design Pattern';
@@ -64,6 +65,7 @@ jobs:
           const pkg = require('./package.json');
           pkg.name = '@mario-flores-ramos/notifications_ramos';
           pkg.version = '${{ github.ref_name }}'.replace('v', '');
+          delete pkg.private;
           pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
           pkg.author = 'Mario Antonio Flores Ramos';
           pkg.description = 'Notifications App implementing Bridge Design Pattern';
@@ -99,8 +101,8 @@ jobs:
           
           ### 🛠️ Instalación
           ```bash
-          npm install @mario-flores-ramos/customer-app_ramos@${{ steps.get_version.outputs.VERSION }}
-          npm install @mario-flores-ramos/notifications_ramos@${{ steps.get_version.outputs.VERSION }}
+          npm install @mario-flores-ramos/customer-app_ramos
+          npm install @mario-flores-ramos/notifications_ramos
           ```
         draft: false
         prerelease: false

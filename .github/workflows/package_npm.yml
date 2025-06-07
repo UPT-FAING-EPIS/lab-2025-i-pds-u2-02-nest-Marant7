@@ -56,6 +56,7 @@ jobs:
         node -e "
           const pkg = require('./package.json');
           pkg.name = '@mario-flores-ramos/customer-app_ramos';
+          delete pkg.private;
           pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
           pkg.author = 'Mario Antonio Flores Ramos';
           pkg.description = 'Customer App implementing Facade Design Pattern';
@@ -73,6 +74,7 @@ jobs:
         node -e "
           const pkg = require('./package.json');
           pkg.name = '@mario-flores-ramos/notifications_ramos';
+          delete pkg.private;
           pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
           pkg.author = 'Mario Antonio Flores Ramos';
           pkg.description = 'Notifications App implementing Bridge Design Pattern';
